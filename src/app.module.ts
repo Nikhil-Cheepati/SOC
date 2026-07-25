@@ -1,16 +1,17 @@
 import { McpApp, Module, ConfigModule } from '@nitrostack/core';
 
-import { PizzazModule } from './modules/pizzaz/pizzaz.module.js';
-
 import { SocModule } from './modules/soc/soc.module.js';
 
 
 
 /**
  * Root Application Module
- * 
- * Autonomous SOC Tier-1 Analyst & Incident Triage Agent
+ *
+ * Autonomous SOC Tier-1 Analyst
+ * and Incident Triage Agent
  */
+
+
 @McpApp({
 
     module: AppModule,
@@ -32,6 +33,7 @@ import { SocModule } from './modules/soc/soc.module.js';
 })
 
 
+
 @Module({
 
     name: 'soc',
@@ -43,8 +45,6 @@ import { SocModule } from './modules/soc/soc.module.js';
     imports: [
 
         ConfigModule.forRoot(),
-
-        PizzazModule,
 
         SocModule
 
