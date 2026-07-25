@@ -1,54 +1,63 @@
-# NitroStack Pizzaz Template
+# Autonomous SOC Tier-1 Analyst & Incident Triage Agent
 
-Template focused on rich, interactive widget experiences (map/list/detail flows)
-using the NitroStack widget SDK patterns.
+An AI-powered Security Operations Center assistant built using NitroStack MCP.
 
-## What This Template Includes
+## Problem
 
-- Widget-heavy module and UI structure
-- Interactive examples for advanced frontends
-- Optional map provider integration pattern
-- Studio-friendly development workflow
+SOC analysts receive hundreds of security alerts every day.
+Manual alert investigation causes alert fatigue and delays critical threat response.
 
-## Quick Start
+## Solution
+
+An autonomous AI SOC agent that helps Tier-1 analysts by:
+
+- Analyzing security alerts
+- Extracting Indicators of Compromise (IOCs)
+- Mapping threats to MITRE ATT&CK techniques
+- Performing risk scoring
+- Generating incident reports
+- Suggesting response actions
+
+
+## Features
+
+### Security Alert Analysis
+Analyzes logs and alerts to identify suspicious behaviour.
+
+### IOC Extraction
+Extracts:
+- IP addresses
+- Domains
+- Hashes
+- Suspicious commands
+
+### MITRE ATT&CK Mapping
+Maps attacker behaviour to known techniques.
+
+### Risk Scoring
+Assigns severity:
+
+Low
+Medium
+High
+Critical
+
+
+### Incident Report Generation
+Creates structured incident summaries.
+
+
+## Tech Stack
+
+- NitroStack MCP
+- TypeScript
+- Agentic AI
+- Cybersecurity Threat Intelligence
+- MITRE ATT&CK Framework
+
+
+## Running the Project
 
 ```bash
-npx @nitrostack/cli init my-pizzaz-app --template typescript-pizzaz
-cd my-pizzaz-app
+npm install
 npm run dev
-```
-
-## Optional Configuration
-
-If this project uses a map provider, configure API tokens in widget `.env` files
-as documented in the template source.
-
-## Common Commands
-
-```bash
-npm run dev
-npm run build
-npm start
-npm run widget <command>
-```
-
-## NitroStudio
-
-NitroStudio is the fastest way to test and debug interactive widget output.
-
-- Download: <https://nitrostack.ai/studio>
-- Studio: <https://nitrostack.ai/studio>
-
-## Links
-
-- Docs: <https://docs.nitrostack.ai>
-- Widgets docs: <https://docs.nitrostack.ai/sdk/typescript/ui/widgets>
-- Main repository: <https://github.com/nitrocloudofficial/nitrostack>
-
-## Community
-
-- Discord: <https://discord.gg/uVWey6UhuD>
-- X: <https://x.com/nitrostackai>
-- YouTube: <https://www.youtube.com/@nitrostackai>
-- LinkedIn: <https://linkedin.com/company/nitrostack-ai/>
-- GitHub: <https://github.com/nitrostackai>
