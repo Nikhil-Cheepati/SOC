@@ -109,6 +109,20 @@ const ReportSchema = z.object({
 
 
 
+// NEW MASTER TOOL SCHEMA
+
+const InvestigationSchema = z.object({
+
+    alert:
+    z.string()
+    .describe(
+        "Complete security alert or incident details"
+    )
+
+});
+
+
+
 
 // =================================
 // SOC TOOL CLASS
@@ -116,267 +130,453 @@ const ReportSchema = z.object({
 
 
 @Injectable({
-    deps: [SocService]
+    deps:[SocService]
 })
 
 
 export class SocTools {
 
 
-    constructor(
 
-        private readonly socService: SocService
+constructor(
 
-    ){}
+    private readonly socService: SocService
 
-
-
-
-    // =================================
-    // TOOL 1
-    // ANALYZE SECURITY ALERT
-    // =================================
+){}
 
 
-    @Tool({
-
-        name:
-        "analyze_security_alert",
-
-        description:
-        "Analyze security logs and detect cyber attacks",
-
-        inputSchema:
-        AnalyzeAlertSchema
-
-    })
 
 
-    async analyzeSecurityAlert(
 
-        args:
-        z.infer<typeof AnalyzeAlertSchema>,
-
-        ctx: ExecutionContext
-
-    ){
+// =================================
+// TOOL 1
+// ANALYZE SECURITY ALERT
+// =================================
 
 
-        ctx.logger.info(
-            "Analyzing security alert"
-        );
+@Tool({
+
+    name:
+    "analyze_security_alert",
+
+    description:
+    "Analyze security logs and detect cyber attacks",
+
+    inputSchema:
+    AnalyzeAlertSchema
+
+})
 
 
-        return this.socService.analyzeAlert(
+async analyzeSecurityAlert(
+
+    args:
+    z.infer<typeof AnalyzeAlertSchema>,
+
+    ctx:ExecutionContext
+
+){
+
+
+    ctx.logger.info(
+        "Analyzing security alert"
+    );
+
+
+    return this.socService.analyzeAlert(
+        args.log
+    );
+
+
+}
+
+
+
+
+
+
+
+// =================================
+// TOOL 2
+// THREAT INTELLIGENCE
+// =================================
+
+
+@Tool({
+
+    name:
+    "check_threat_intelligence",
+
+    description:
+    "Check whether an IP address is malicious",
+
+    inputSchema:
+    ThreatIntelSchema
+
+})
+
+
+async checkThreatIntelligence(
+
+    args:
+    z.infer<typeof ThreatIntelSchema>
+
+){
+
+
+    return {
+
+
+        indicator:
+        args.ip,
+
+
+        status:
+        "Suspicious",
+
+
+        confidence:
+        85,
+
+
+        reports:
+        27
+
+
+    };
+
+
+}
+
+
+
+
+
+
+
+
+// =================================
+// TOOL 3
+// MITRE ATT&CK LOOKUP
+// =================================
+
+
+@Tool({
+
+    name:
+    "mitre_attack_lookup",
+
+    description:
+    "Map attack to MITRE ATT&CK technique",
+
+    inputSchema:
+    MitreSchema
+
+})
+
+
+async mitreAttackLookup(
+
+    args:
+    z.infer<typeof MitreSchema>
+
+){
+
+
+    return this.socService.getMitreTechnique(
+        args.attack
+    );
+
+
+}
+
+
+
+
+
+
+
+
+// =================================
+// TOOL 4
+// IOC EXTRACTION
+// =================================
+
+
+@Tool({
+
+    name:
+    "extract_iocs",
+
+    description:
+    "Extract indicators of compromise from logs",
+
+    inputSchema:
+    AnalyzeAlertSchema
+
+})
+
+
+async extractIOCs(
+
+    args:
+    z.infer<typeof AnalyzeAlertSchema>
+
+){
+
+
+    const ipRegex =
+    /\b\d{1,3}(\.\d{1,3}){3}\b/g;
+
+
+
+    const domainRegex =
+    /[a-zA-Z0-9.-]+\.(com|net|org|io)/g;
+
+
+
+    const hashRegex =
+    /\b[a-fA-F0-9]{32,64}\b/g;
+
+
+
+
+    return {
+
+
+        ips:
+        args.log.match(ipRegex)
+        ||
+        [],
+
+
+
+        domains:
+        args.log.match(domainRegex)
+        ||
+        [],
+
+
+
+        hashes:
+        args.log.match(hashRegex)
+        ||
+        [],
+
+
+
+        keywords:
+
+        [
+
+            "malware",
+            "phishing",
+            "exploit",
+            "brute force"
+
+        ]
+
+        .filter(
+
+            item =>
             args.log
-        );
+            .toLowerCase()
+            .includes(item)
 
+        )
 
-    }
 
+    };
 
 
+}
 
 
 
 
-    // =================================
-    // TOOL 2
-    // THREAT INTELLIGENCE
-    // =================================
 
 
-    @Tool({
 
-        name:
-        "check_threat_intelligence",
 
-        description:
-        "Check whether an IP address is malicious",
 
-        inputSchema:
-        ThreatIntelSchema
 
-    })
+// =================================
+// TOOL 5
+// RISK CALCULATION
+// =================================
 
 
-    async checkThreatIntelligence(
+@Tool({
 
-        args:
-        z.infer<typeof ThreatIntelSchema>,
+    name:
+    "calculate_risk_score",
 
-        ctx: ExecutionContext
+    description:
+    "Calculate security risk score",
 
-    ){
+    inputSchema:
+    RiskSchema
 
+})
 
-        ctx.logger.info(
-            "Checking threat intelligence"
-        );
 
+async calculateRiskScore(
 
-        return {
+    args:
+    z.infer<typeof RiskSchema>
 
+){
 
-            ip:
-            args.ip,
 
+    return this.socService.calculateRiskScore(
 
-            status:
-            "Suspicious",
+        args.severity,
 
+        args.confidence
 
-            riskScore:
-            85,
+    );
 
 
-            reports:
-            27
+}
 
 
-        };
 
 
-    }
 
 
 
 
 
 
+// =================================
+// TOOL 6
+// RESPONSE RECOMMENDATION
+// =================================
 
-    // =================================
-    // TOOL 3
-    // MITRE ATT&CK LOOKUP
-    // =================================
 
+@Tool({
 
-    @Tool({
+    name:
+    "response_recommendation",
 
-        name:
-        "mitre_attack_lookup",
+    description:
+    "Recommend incident response actions",
 
-        description:
-        "Map attack to MITRE ATT&CK technique",
+    inputSchema:
+    ResponseSchema
 
-        inputSchema:
-        MitreSchema
+})
 
-    })
 
+async responseRecommendation(
 
-    async mitreAttackLookup(
+    args:
+    z.infer<typeof ResponseSchema>
 
-        args:
-        z.infer<typeof MitreSchema>
+){
 
-    ){
 
+    return {
 
-        return {
 
+        attack:
+        args.attack,
 
-            attack:
-            args.attack,
 
+        actions:
 
-            technique:
-            "T1110",
+        this.socService.getResponseRecommendation(
+            args.attack
+        )
 
 
-            tactic:
-            "Credential Access",
+    };
 
 
-            description:
-            "MITRE ATT&CK technique information"
+}
 
 
-        };
 
 
-    }
 
 
 
 
 
 
+// =================================
+// TOOL 7
+// LOG CORRELATION
+// =================================
 
 
-    // =================================
-    // TOOL 4
-    // IOC EXTRACTION
-    // =================================
+@Tool({
 
+    name:
+    "log_correlation_analysis",
 
-    @Tool({
+    description:
+    "Correlate multiple security events",
 
-        name:
-        "extract_iocs",
+    inputSchema:
+    CorrelationSchema
 
-        description:
-        "Extract indicators of compromise from logs",
+})
 
-        inputSchema:
-        AnalyzeAlertSchema
 
-    })
+async logCorrelation(
 
+    args:
+    z.infer<typeof CorrelationSchema>
 
-    async extractIOCs(
+){
 
-        args:
-        z.infer<typeof AnalyzeAlertSchema>
 
-    ){
+    const threatScore =
+    args.events.length * 30;
 
 
-        const ipRegex =
-        /\b\d{1,3}(\.\d{1,3}){3}\b/g;
 
+    return {
 
 
-        return {
+        events:
+        args.events,
 
 
-            ips:
+        finding:
 
-            args.log.match(ipRegex)
-            ||
-            [],
+        "Multiple security events analyzed",
 
 
 
-            keywords:
+        threatLevel:
 
+        threatScore >= 90
 
-            [
+        ?
 
-                "malware",
+        "CRITICAL"
 
-                "phishing",
+        :
 
-                "exploit"
+        threatScore >= 60
 
-            ]
+        ?
 
+        "HIGH"
 
-            .filter(
+        :
 
-                item =>
+        "MEDIUM"
 
-                args.log
-                .toLowerCase()
-                .includes(item)
 
-            )
 
+    };
 
-        };
 
+}
 
-    }
 
 
 
@@ -385,227 +585,236 @@ export class SocTools {
 
 
 
-    // =================================
-    // TOOL 5
-    // RISK CALCULATION
-    // =================================
 
+// =================================
+// TOOL 8
+// INCIDENT REPORT
+// =================================
 
-    @Tool({
 
-        name:
-        "calculate_risk_score",
+@Tool({
 
-        description:
-        "Calculate security risk score",
+    name:
+    "generate_incident_report",
 
-        inputSchema:
-        RiskSchema
+    description:
+    "Generate SOC incident report",
 
-    })
+    inputSchema:
+    ReportSchema
 
+})
 
-    async calculateRiskScore(
 
-        args:
-        z.infer<typeof RiskSchema>
+async generateIncidentReport(
 
-    ){
+    args:
+    z.infer<typeof ReportSchema>
 
+){
 
-        return this.socService.calculateRisk(
 
-            args.severity,
+    return this.socService.generateReport(
 
-            args.confidence
+        args.attack,
 
-        );
+        args.severity,
 
+        args.risk
 
-    }
+    );
 
 
+}
 
 
 
 
 
 
-    // =================================
-    // TOOL 6
-    // RESPONSE RECOMMENDATION
-    // =================================
 
 
-    @Tool({
 
-        name:
-        "response_recommendation",
+// =================================
+// TOOL 9
+// AUTONOMOUS INVESTIGATION
+// =================================
 
-        description:
-        "Recommend incident response actions",
 
-        inputSchema:
-        ResponseSchema
+@Tool({
 
-    })
+    name:
+    "investigate_incident",
 
+    description:
+    "Autonomously investigate security incidents using SOC workflow",
 
-    async responseRecommendation(
+    inputSchema:
+    InvestigationSchema
 
-        args:
-        z.infer<typeof ResponseSchema>
+})
 
-    ){
 
+async investigateIncident(
 
-        return {
+    args:
+    z.infer<typeof InvestigationSchema>,
 
+    ctx:
+    ExecutionContext
 
-            attack:
-            args.attack,
+){
 
 
-            actions:
+    ctx.logger.info(
+        "Starting autonomous SOC investigation"
+    );
 
 
-            [
 
-                "Block malicious IP",
+    // 1. Analyze Alert
 
-                "Collect additional logs",
+    const analysis =
+    this.socService.analyzeAlert(
+        args.alert
+    );
 
-                "Reset compromised credentials",
 
-                "Enable MFA",
 
-                "Investigate affected systems"
 
-            ]
+    // 2. Extract IOCs
 
+    const iocs =
+    await this.extractIOCs({
 
-        };
+        log:
+        args.alert
 
+    });
 
-    }
 
 
 
+    const threat =
+    analysis.threat;
 
 
 
+    // 3. MITRE Mapping
 
+    const mitre =
 
-    // =================================
-    // TOOL 7
-    // LOG CORRELATION
-    // =================================
+    threat
 
+    ?
 
-    @Tool({
+    this.socService.getMitreTechnique(
+        threat.name
+    )
 
-        name:
-        "log_correlation_analysis",
+    :
 
-        description:
-        "Correlate multiple security events",
+    null;
 
-        inputSchema:
-        CorrelationSchema
 
-    })
 
 
-    async logCorrelation(
 
-        args:
-        z.infer<typeof CorrelationSchema>
+    // 4. Risk Assessment
 
-    ){
+    const risk =
 
+    threat
 
-        const threatScore =
-        args.events.length * 30;
+    ?
 
+    this.socService.calculateRiskScore(
 
+        threat.severity,
 
-        return {
+        0.9
 
+    )
 
-            events:
-            args.events,
+    :
 
+    null;
 
-            finding:
-            "Multiple events indicate coordinated attack",
 
 
-            threatLevel:
 
 
-            threatScore >= 90
 
-            ?
+    // 5. Response Actions
 
-            "CRITICAL"
+    const response =
 
-            :
+    threat
 
-            "HIGH"
+    ?
 
+    this.socService.getResponseRecommendation(
+        threat.name
+    )
 
-        };
+    :
 
+    [];
 
-    }
 
 
 
 
 
+    // 6. Final Result
 
 
+    return {
 
-    // =================================
-    // TOOL 8
-    // INCIDENT REPORT
-    // =================================
 
+        status:
+        "Investigation Completed",
 
-    @Tool({
 
-        name:
-        "generate_incident_report",
 
-        description:
-        "Generate SOC incident report",
+        alert:
+        args.alert,
 
-        inputSchema:
-        ReportSchema
 
-    })
 
+        threatAnalysis:
+        analysis,
 
-    async generateIncidentReport(
 
-        args:
-        z.infer<typeof ReportSchema>
 
-    ){
+        extractedIOCs:
+        iocs,
 
 
-        return this.socService.generateReport(
 
-            args.attack,
+        mitreMapping:
+        mitre,
 
-            args.severity,
 
-            args.risk
 
-        );
+        riskAssessment:
+        risk,
 
 
-    }
+
+        recommendedActions:
+        response,
+
+
+
+        summary:
+
+        "Autonomous SOC Tier-1 investigation completed"
+
+
+    };
+
+}
 
 
 

@@ -1,33 +1,41 @@
 import { Injectable } from '@nitrostack/core';
 
-import { THREAT_DATABASE, type ThreatInfo }
-from './soc.data.js';
+import {
+    THREAT_DATABASE,
+    SECURITY_ALERTS,
+    findThreat,
+    type ThreatInfo,
+    type SecurityAlert
+} from './soc.data.js';
 
 
 
 @Injectable()
-
 export class SocService {
 
 
-    /**
-     * Get all security threats
-     */
-    getAllThreats(): ThreatInfo[] {
 
-        return THREAT_DATABASE;
+    /**
+     * Get all security alerts
+     */
+    getAllAlerts(): SecurityAlert[] {
+
+        return SECURITY_ALERTS;
 
     }
 
 
 
-    /**
-     * Get a specific threat by ID
-     */
-    getThreatById(id: string): ThreatInfo | undefined {
 
-        return THREAT_DATABASE.find(
-            threat => threat.id === id
+
+    /**
+     * Find alert by ID
+     */
+    getAlertById(id:string): SecurityAlert | undefined {
+
+
+        return SECURITY_ALERTS.find(
+            alert => alert.id === id
         );
 
     }
@@ -35,263 +43,137 @@ export class SocService {
 
 
 
+
+
+
     /**
-     * Filter threats based on criteria
+     * Analyze security alert
      */
-    getThreatsFiltered(filters: {
-
-        severity?: string;
-
-        category?: string;
-
-        active?: boolean;
-
-        detectionSource?: string;
-
-    }): ThreatInfo[] {
+    analyzeAlert(alertText:string){
 
 
-        let threats = [...THREAT_DATABASE];
+        let matchedThreat =
+            THREAT_DATABASE.find(
 
-
-
-        if(filters.severity) {
-
-            threats = threats.filter(
                 threat =>
-                threat.severity.toLowerCase()
-                === filters.severity!.toLowerCase()
-            );
 
-        }
-
-
-
-
-        if(filters.category) {
-
-            threats = threats.filter(
-                threat =>
-                threat.category
+                alertText
                 .toLowerCase()
                 .includes(
-                    filters.category!.toLowerCase()
+                    threat.name.toLowerCase()
                 )
+
             );
 
-        }
 
 
+        if(!matchedThreat){
 
-
-
-        if(filters.active !== undefined) {
-
-            threats = threats.filter(
-                threat =>
-                threat.active === filters.active
-            );
+            matchedThreat =
+            findThreat(alertText);
 
         }
-
-
-
-
-
-        if(filters.detectionSource) {
-
-            threats = threats.filter(
-                threat =>
-                threat.detectionSource
-                .toLowerCase()
-                .includes(
-                    filters.detectionSource!
-                    .toLowerCase()
-                )
-            );
-
-        }
-
-
-
-        return threats;
-
-    }
-
-
-
-
-
-
-
-    /**
-     * Get critical threats
-     */
-    getCriticalThreats(): ThreatInfo[] {
-
-
-        return THREAT_DATABASE.filter(
-
-            threat =>
-            threat.severity === "CRITICAL"
-
-        );
-
-
-    }
-
-
-
-
-
-
-    /**
-     * Analyze a security alert log
-     */
-    analyzeAlert(log:string) {
-
-
-        const data =
-        log.toLowerCase();
-
-
-
-        if(
-            data.includes("failed login") ||
-            data.includes("ssh") ||
-            data.includes("brute")
-        ){
-
-            return {
-
-
-                attack:
-                "SSH Brute Force",
-
-
-                severity:
-                "HIGH",
-
-
-                confidence:
-                92,
-
-
-                mitre:
-                "T1110",
-
-
-                recommendation:
-                "Block IP address and enable MFA"
-
-
-            };
-
-        }
-
-
-
-
-
-        if(
-            data.includes("sql") ||
-            data.includes("select")
-        ){
-
-            return {
-
-
-                attack:
-                "SQL Injection",
-
-
-                severity:
-                "CRITICAL",
-
-
-                confidence:
-                95,
-
-
-                mitre:
-                "T1190",
-
-
-                recommendation:
-                "Block malicious request and patch application"
-
-
-            };
-
-        }
-
-
-
-
-
-
-        if(
-            data.includes("malware") ||
-            data.includes(".exe")
-        ){
-
-            return {
-
-
-                attack:
-                "Malware Execution",
-
-
-                severity:
-                "HIGH",
-
-
-                confidence:
-                90,
-
-
-                mitre:
-                "T1204",
-
-
-                recommendation:
-                "Isolate infected endpoint"
-
-
-            };
-
-        }
-
-
 
 
 
         return {
 
 
-            attack:
-            "Unknown Threat",
+            alert:
+            alertText,
 
 
-            severity:
-            "LOW",
+            threat:
+            matchedThreat || null,
 
 
-            confidence:
-            50,
+            detected:
+            matchedThreat
+            ?
+            true
+            :
+            false,
 
 
-            mitre:
-            "Unknown",
+            message:
 
+            matchedThreat
 
-            recommendation:
-            "Continue monitoring"
+            ?
+
+            "Threat identified successfully"
+
+            :
+
+            "No known threat detected"
 
 
         };
 
+
     }
+
+
+
+
+
+
+
+    /**
+     * MITRE ATT&CK lookup
+     */
+    getMitreTechnique(
+        threatName:string
+    ){
+
+
+        const threat =
+        findThreat(threatName);
+
+
+
+        if(!threat){
+
+            return {
+
+                found:false,
+
+                message:
+                "MITRE technique not found"
+
+            };
+
+        }
+
+
+
+        return {
+
+
+            found:true,
+
+
+            attack:
+            threat.name,
+
+
+            technique:
+            threat.mitreTechnique,
+
+
+            category:
+            threat.category,
+
+
+            severity:
+            threat.severity
+
+
+        };
+
+
+    }
+
 
 
 
@@ -302,31 +184,64 @@ export class SocService {
     /**
      * Calculate risk score
      */
-    calculateRisk(
+    calculateRiskScore(
+
         severity:string,
+
         confidence:number
+
     ){
 
 
-        let score =
-        confidence;
+        let severityScore = 0;
 
 
 
+        switch(severity.toUpperCase()){
 
-        if(severity==="HIGH"){
 
-            score +=10;
+            case "LOW":
+
+                severityScore = 25;
+
+                break;
+
+
+
+            case "MEDIUM":
+
+                severityScore = 50;
+
+                break;
+
+
+
+            case "HIGH":
+
+                severityScore = 75;
+
+                break;
+
+
+
+            case "CRITICAL":
+
+                severityScore = 100;
+
+                break;
+
 
         }
 
 
 
-        if(severity==="CRITICAL"){
 
-            score +=20;
+        const risk = Math.round(
 
-        }
+            severityScore * confidence
+
+        );
+
 
 
 
@@ -335,25 +250,36 @@ export class SocService {
 
 
             riskScore:
-            Math.min(score,100),
+            risk,
 
 
+            level:
 
-            priority:
+            risk >= 80
 
-            score >= 90
             ?
+
             "CRITICAL"
 
             :
 
-            score >= 70
+            risk >= 60
+
             ?
+
             "HIGH"
 
             :
 
+            risk >= 30
+
+            ?
+
             "MEDIUM"
+
+            :
+
+            "LOW"
 
 
         };
@@ -367,8 +293,55 @@ export class SocService {
 
 
 
+
+
     /**
-     * Generate incident report
+     * Response recommendation
+     */
+    getResponseRecommendation(
+
+        threatName:string
+
+    ){
+
+
+
+        const threat =
+        findThreat(threatName);
+
+
+
+
+        if(!threat){
+
+            return [
+
+                "Investigate manually"
+
+            ];
+
+        }
+
+
+
+
+
+        return threat.recommendedActions;
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Generate SOC Incident Report
      */
     generateReport(
 
@@ -381,45 +354,144 @@ export class SocService {
     ){
 
 
+
+        const threat =
+        findThreat(attack);
+
+
+
+
         return {
 
 
-            incidentID:
-            "INC-" + Date.now(),
+            reportTitle:
 
+            "SOC Incident Report",
+
+
+
+            attack:
 
             attack,
 
 
+
+            severity:
+
             severity,
 
 
+
             riskScore:
+
             risk,
 
 
-            status:
-            "OPEN",
+
+            mitreTechnique:
+
+            threat
+
+            ?
+
+            threat.mitreTechnique
+
+            :
+
+            "Unknown",
 
 
 
-            actions:[
 
-                "Collect security logs",
+            category:
 
-                "Investigate affected system",
+            threat
 
-                "Contain threat",
+            ?
 
-                "Document incident"
+            threat.category
 
-            ]
+            :
+
+            "Unknown",
+
+
+
+
+            description:
+
+            threat
+
+            ?
+
+            threat.description
+
+            :
+
+            "No threat description available",
+
+
+
+
+            indicators:
+
+            threat
+
+            ?
+
+            threat.indicators
+
+            :
+
+            [],
+
+
+
+
+            affectedSystems:
+
+            threat
+
+            ?
+
+            threat.affectedSystems
+
+            :
+
+            [],
+
+
+
+
+            recommendedActions:
+
+            threat
+
+            ?
+
+            threat.recommendedActions
+
+            :
+
+            [
+
+                "Perform manual investigation"
+
+            ],
+
+
+
+
+            generatedAt:
+
+            new Date().toISOString()
 
 
         };
 
 
     }
+
 
 
 }

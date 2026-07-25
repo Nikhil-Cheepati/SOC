@@ -248,3 +248,95 @@ export const THREAT_DATABASE: ThreatInfo[] = [
     }
 
 ];
+export interface SecurityAlert {
+
+    id:string;
+
+    type:string;
+
+    severity:
+    "LOW" |
+    "MEDIUM" |
+    "HIGH" |
+    "CRITICAL";
+
+    sourceIP:string;
+
+    description:string;
+
+    timestamp:string;
+
+    affectedAsset:string;
+
+    status:
+    "NEW" |
+    "INVESTIGATING" |
+    "RESOLVED";
+
+}
+
+
+
+export const SECURITY_ALERTS: SecurityAlert[] = [
+
+
+{
+    id:"ALERT001",
+
+    type:"SSH Brute Force Attack",
+
+    severity:"HIGH",
+
+    sourceIP:"192.168.1.50",
+
+    description:
+    "200 failed SSH login attempts detected within 5 minutes",
+
+    timestamp:
+    "2026-07-25 10:30",
+
+    affectedAsset:
+    "Linux Server",
+
+    status:
+    "NEW"
+},
+
+
+
+{
+    id:"ALERT002",
+
+    type:"Malware Execution",
+
+    severity:"CRITICAL",
+
+    sourceIP:"10.0.0.15",
+
+    description:
+    "Suspicious executable detected on endpoint",
+
+    timestamp:
+    "2026-07-25 11:00",
+
+    affectedAsset:
+    "Employee Laptop",
+
+    status:
+    "NEW"
+}
+
+
+];
+export function findThreat(type:string){
+
+    return THREAT_DATABASE.find(
+        threat =>
+        threat.name
+        .toLowerCase()
+        .includes(
+            type.toLowerCase()
+        )
+    );
+
+}
