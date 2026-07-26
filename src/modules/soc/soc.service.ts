@@ -1,12 +1,23 @@
 import { Injectable } from '@nitrostack/core';
 
+
 import {
+
     THREAT_DATABASE,
+
     SECURITY_ALERTS,
+
     findThreat,
-    type ThreatInfo,
+
     type SecurityAlert
+
 } from './soc.data.js';
+
+
+
+import mitreData from '../../resources/mitre/enterprise-attack.json';
+
+
 
 
 
@@ -20,9 +31,13 @@ export class SocService {
      */
     getAllAlerts(): SecurityAlert[] {
 
+
         return SECURITY_ALERTS;
 
+
     }
+
+
 
 
 
@@ -31,12 +46,18 @@ export class SocService {
     /**
      * Find alert by ID
      */
-    getAlertById(id:string): SecurityAlert | undefined {
+    getAlertById(
+        id:string
+    ): SecurityAlert | undefined {
 
 
         return SECURITY_ALERTS.find(
-            alert => alert.id === id
+
+            alert =>
+            alert.id === id
+
         );
+
 
     }
 
@@ -46,33 +67,49 @@ export class SocService {
 
 
 
+
+
     /**
-     * Analyze security alert
+     * Analyze Security Alert
      */
-    analyzeAlert(alertText:string){
+    analyzeAlert(
+        alertText:string
+    ){
+
 
 
         let matchedThreat =
-            THREAT_DATABASE.find(
 
-                threat =>
+        THREAT_DATABASE.find(
 
-                alertText
+            threat =>
+
+            alertText
+            .toLowerCase()
+            .includes(
+
+                threat.name
                 .toLowerCase()
-                .includes(
-                    threat.name.toLowerCase()
-                )
 
-            );
+            )
+
+        );
+
+
 
 
 
         if(!matchedThreat){
 
+
             matchedThreat =
             findThreat(alertText);
 
+
         }
+
+
+
 
 
 
@@ -80,19 +117,28 @@ export class SocService {
 
 
             alert:
+
             alertText,
 
 
+
             threat:
+
             matchedThreat || null,
 
 
+
             detected:
+
             matchedThreat
             ?
+
             true
+
             :
+
             false,
+
 
 
             message:
@@ -119,31 +165,87 @@ export class SocService {
 
 
 
+
+
     /**
-     * MITRE ATT&CK lookup
+     * REAL MITRE ATT&CK DATASET LOOKUP
      */
     getMitreTechnique(
-        threatName:string
+
+        attackName:string
+
     ){
 
 
-        const threat =
-        findThreat(threatName);
+
+        const objects:any[] =
+
+        (mitreData as any).objects;
 
 
 
-        if(!threat){
+
+
+
+        const techniques =
+
+        objects.filter(
+
+            item =>
+
+
+            item.type === "attack-pattern"
+
+            &&
+
+
+            item.name
+
+            ?.toLowerCase()
+
+            .includes(
+
+                attackName
+                .toLowerCase()
+
+            )
+
+
+        );
+
+
+
+
+
+
+
+
+        if(
+            techniques.length === 0
+        ){
+
 
             return {
 
+
                 found:false,
 
+
                 message:
-                "MITRE technique not found"
+
+                "MITRE ATT&CK technique not found"
+
+
 
             };
 
+
         }
+
+
+
+
+
 
 
 
@@ -153,20 +255,76 @@ export class SocService {
             found:true,
 
 
-            attack:
-            threat.name,
+
+            count:
+
+            techniques.length,
 
 
-            technique:
-            threat.mitreTechnique,
+
+            techniques:
 
 
-            category:
-            threat.category,
+            techniques.map(
+
+                tech => {
 
 
-            severity:
-            threat.severity
+                    const mitreID =
+
+
+                    tech.external_references
+
+                    ?.find(
+
+                        (ref:any)=>
+
+                        ref.source_name ===
+                        "mitre-attack"
+
+                    )
+
+                    ?.external_id;
+
+
+
+
+
+
+                    return {
+
+
+                        name:
+
+                        tech.name,
+
+
+
+                        id:
+
+                        mitreID,
+
+
+
+                        description:
+
+                        tech.description
+                        ?
+
+                        tech.description
+
+                        :
+
+                        "No description available"
+
+
+                    };
+
+
+                }
+
+
+            )
 
 
         };
@@ -181,8 +339,9 @@ export class SocService {
 
 
 
+
     /**
-     * Calculate risk score
+     * Calculate Risk Score
      */
     calculateRiskScore(
 
@@ -193,11 +352,16 @@ export class SocService {
     ){
 
 
+
         let severityScore = 0;
 
 
 
-        switch(severity.toUpperCase()){
+
+
+        switch(
+            severity.toUpperCase()
+        ){
 
 
             case "LOW":
@@ -236,11 +400,18 @@ export class SocService {
 
 
 
-        const risk = Math.round(
 
-            severityScore * confidence
+
+        const risk =
+
+        Math.round(
+
+            severityScore *
+            confidence
 
         );
+
+
 
 
 
@@ -250,10 +421,13 @@ export class SocService {
 
 
             riskScore:
+
             risk,
 
 
+
             level:
+
 
             risk >= 80
 
@@ -261,7 +435,9 @@ export class SocService {
 
             "CRITICAL"
 
+
             :
+
 
             risk >= 60
 
@@ -269,7 +445,9 @@ export class SocService {
 
             "HIGH"
 
+
             :
+
 
             risk >= 30
 
@@ -277,12 +455,15 @@ export class SocService {
 
             "MEDIUM"
 
+
             :
 
             "LOW"
 
 
+
         };
+
 
 
     }
@@ -296,7 +477,7 @@ export class SocService {
 
 
     /**
-     * Response recommendation
+     * Response Recommendation
      */
     getResponseRecommendation(
 
@@ -307,18 +488,27 @@ export class SocService {
 
 
         const threat =
-        findThreat(threatName);
+
+        findThreat(
+
+            threatName
+
+        );
+
+
 
 
 
 
         if(!threat){
 
+
             return [
 
-                "Investigate manually"
+                "Perform manual investigation"
 
             ];
+
 
         }
 
@@ -341,22 +531,47 @@ export class SocService {
 
 
     /**
-     * Generate SOC Incident Report
+     * Generate Incident Report
      */
     generateReport(
 
+
         attack:string,
+
 
         severity:string,
 
+
         risk:number
+
 
     ){
 
 
 
+
+
         const threat =
-        findThreat(attack);
+
+        findThreat(
+
+            attack
+
+        );
+
+
+
+
+        const mitre =
+
+        this.getMitreTechnique(
+
+            attack
+
+        );
+
+
+
 
 
 
@@ -364,106 +579,126 @@ export class SocService {
         return {
 
 
+
             reportTitle:
 
-            "SOC Incident Report",
+
+            "Autonomous SOC Incident Report",
 
 
 
-            attack:
-
-            attack,
 
 
+            generatedAt:
 
-            severity:
 
-            severity,
+            new Date()
+            .toISOString(),
 
 
 
-            riskScore:
-
-            risk,
 
 
+            incident:
 
-            mitreTechnique:
+
+            {
+
+
+                attack:
+
+
+                attack,
+
+
+
+                severity:
+
+
+                severity,
+
+
+
+                riskScore:
+
+
+                risk
+
+
+
+            },
+
+
+
+
+
+
+
+            threatInformation:
+
 
             threat
 
             ?
 
-            threat.mitreTechnique
+            {
+
+
+                category:
+
+                threat.category,
+
+
+
+                description:
+
+                threat.description,
+
+
+
+                indicators:
+
+                threat.indicators,
+
+
+
+                affectedSystems:
+
+                threat.affectedSystems
+
+
+
+            }
+
+
 
             :
 
-            "Unknown",
+
+
+            null,
 
 
 
 
-            category:
-
-            threat
-
-            ?
-
-            threat.category
-
-            :
-
-            "Unknown",
 
 
 
 
-            description:
+            mitreMapping:
 
-            threat
 
-            ?
-
-            threat.description
-
-            :
-
-            "No threat description available",
+            mitre,
 
 
 
 
-            indicators:
-
-            threat
-
-            ?
-
-            threat.indicators
-
-            :
-
-            [],
-
-
-
-
-            affectedSystems:
-
-            threat
-
-            ?
-
-            threat.affectedSystems
-
-            :
-
-            [],
 
 
 
 
             recommendedActions:
+
 
             threat
 
@@ -471,27 +706,78 @@ export class SocService {
 
             threat.recommendedActions
 
+
             :
+
 
             [
 
-                "Perform manual investigation"
 
-            ],
-
+                "Investigate manually"
 
 
+            ]
 
-            generatedAt:
-
-            new Date().toISOString()
 
 
         };
+
 
 
     }
 
 
 
+
+
+
+
+/**
+ * MITRE Dataset Status
+ */
+getMitreDataCount(){
+
+
+    const objects:any[] =
+    (mitreData as any).objects;
+
+
+
+    const techniques =
+    objects.filter(
+
+        item =>
+        item.type === "attack-pattern"
+
+    );
+
+
+
+    return {
+
+
+        dataset:
+        "MITRE ATT&CK Enterprise",
+
+
+        version:
+        "19.1",
+
+
+        totalObjects:
+        objects.length,
+
+
+        attackTechniques:
+        techniques.length,
+
+
+        status:
+        "Loaded Successfully"
+
+
+    };
+
+
+}
 }

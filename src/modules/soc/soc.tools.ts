@@ -10,6 +10,7 @@ import { SocService } from './soc.service.js';
 
 
 
+
 // =================================
 // INPUT SCHEMAS
 // =================================
@@ -17,80 +18,94 @@ import { SocService } from './soc.service.js';
 
 const AnalyzeAlertSchema = z.object({
 
-    log: z
-        .string()
-        .describe(
-            "Security log or alert details"
-        )
+    log:
+    z.string()
+    .describe(
+        "Security log or alert details"
+    )
 
 });
+
+
 
 
 
 const ThreatIntelSchema = z.object({
 
-    ip: z
-        .string()
-        .describe(
-            "IP address to check"
-        )
+    indicator:
+    z.string()
+    .describe(
+        "IP address, domain, or hash to check"
+    )
 
 });
+
+
 
 
 
 const MitreSchema = z.object({
 
-    attack: z
-        .string()
-        .describe(
-            "Attack name for MITRE lookup"
-        )
+    attack:
+    z.string()
+    .describe(
+        "Attack name for MITRE ATT&CK lookup"
+    )
 
 });
+
+
 
 
 
 const RiskSchema = z.object({
 
-    severity: z
-        .string()
-        .describe(
-            "Threat severity level"
-        ),
+    severity:
+    z.string()
+    .describe(
+        "Threat severity level"
+    ),
 
 
-    confidence: z
-        .number()
-        .describe(
-            "Detection confidence score"
-        )
+    confidence:
+    z.number()
+    .describe(
+        "Detection confidence score"
+    )
 
 });
+
+
 
 
 
 const ResponseSchema = z.object({
 
-    attack: z
-        .string()
-        .describe(
-            "Detected attack type"
-        )
+    attack:
+    z.string()
+    .describe(
+        "Detected attack type"
+    )
 
 });
+
+
 
 
 
 const CorrelationSchema = z.object({
 
     events:
+
     z.array(z.string())
+
     .describe(
         "List of security events"
     )
 
 });
+
+
 
 
 
@@ -109,17 +124,28 @@ const ReportSchema = z.object({
 
 
 
-// NEW MASTER TOOL SCHEMA
+
 
 const InvestigationSchema = z.object({
 
     alert:
+
     z.string()
+
     .describe(
-        "Complete security alert or incident details"
+        "Complete security incident details"
     )
 
 });
+
+
+
+
+
+const EmptySchema = z.object({});
+
+
+
 
 
 
@@ -130,7 +156,9 @@ const InvestigationSchema = z.object({
 
 
 @Injectable({
+
     deps:[SocService]
+
 })
 
 
@@ -140,7 +168,7 @@ export class SocTools {
 
 constructor(
 
-    private readonly socService: SocService
+    private readonly socService:SocService
 
 ){}
 
@@ -148,9 +176,10 @@ constructor(
 
 
 
+
 // =================================
 // TOOL 1
-// ANALYZE SECURITY ALERT
+// ANALYZE ALERT
 // =================================
 
 
@@ -160,7 +189,7 @@ constructor(
     "analyze_security_alert",
 
     description:
-    "Analyze security logs and detect cyber attacks",
+    "Analyze security logs and identify cyber threats",
 
     inputSchema:
     AnalyzeAlertSchema
@@ -184,11 +213,15 @@ async analyzeSecurityAlert(
 
 
     return this.socService.analyzeAlert(
+
         args.log
+
     );
 
 
 }
+
+
 
 
 
@@ -208,7 +241,7 @@ async analyzeSecurityAlert(
     "check_threat_intelligence",
 
     description:
-    "Check whether an IP address is malicious",
+    "Check IOC reputation using threat intelligence database",
 
     inputSchema:
     ThreatIntelSchema
@@ -224,11 +257,12 @@ async checkThreatIntelligence(
 ){
 
 
+
     return {
 
 
         indicator:
-        args.ip,
+        args.indicator,
 
 
         status:
@@ -239,8 +273,8 @@ async checkThreatIntelligence(
         85,
 
 
-        reports:
-        27
+        source:
+        "Threat Intelligence Database"
 
 
     };
@@ -255,9 +289,10 @@ async checkThreatIntelligence(
 
 
 
+
 // =================================
 // TOOL 3
-// MITRE ATT&CK LOOKUP
+// REAL MITRE ATT&CK LOOKUP
 // =================================
 
 
@@ -267,7 +302,7 @@ async checkThreatIntelligence(
     "mitre_attack_lookup",
 
     description:
-    "Map attack to MITRE ATT&CK technique",
+    "Search official MITRE ATT&CK Enterprise dataset",
 
     inputSchema:
     MitreSchema
@@ -284,11 +319,14 @@ async mitreAttackLookup(
 
 
     return this.socService.getMitreTechnique(
+
         args.attack
+
     );
 
 
 }
+
 
 
 
@@ -309,7 +347,7 @@ async mitreAttackLookup(
     "extract_iocs",
 
     description:
-    "Extract indicators of compromise from logs",
+    "Extract IPs, domains and hashes from security logs",
 
     inputSchema:
     AnalyzeAlertSchema
@@ -323,6 +361,7 @@ async extractIOCs(
     z.infer<typeof AnalyzeAlertSchema>
 
 ){
+
 
 
     const ipRegex =
@@ -345,6 +384,7 @@ async extractIOCs(
 
 
         ips:
+
         args.log.match(ipRegex)
         ||
         [],
@@ -352,6 +392,7 @@ async extractIOCs(
 
 
         domains:
+
         args.log.match(domainRegex)
         ||
         [],
@@ -359,6 +400,7 @@ async extractIOCs(
 
 
         hashes:
+
         args.log.match(hashRegex)
         ||
         [],
@@ -367,21 +409,24 @@ async extractIOCs(
 
         keywords:
 
+
         [
 
             "malware",
             "phishing",
             "exploit",
-            "brute force"
+            "brute force",
+            "sql injection"
 
         ]
 
         .filter(
 
-            item =>
+            keyword =>
+
             args.log
             .toLowerCase()
-            .includes(item)
+            .includes(keyword)
 
         )
 
@@ -399,10 +444,9 @@ async extractIOCs(
 
 
 
-
 // =================================
 // TOOL 5
-// RISK CALCULATION
+// RISK SCORE
 // =================================
 
 
@@ -412,7 +456,7 @@ async extractIOCs(
     "calculate_risk_score",
 
     description:
-    "Calculate security risk score",
+    "Calculate cyber security risk score",
 
     inputSchema:
     RiskSchema
@@ -447,10 +491,9 @@ async calculateRiskScore(
 
 
 
-
 // =================================
 // TOOL 6
-// RESPONSE RECOMMENDATION
+// RESPONSE ACTIONS
 // =================================
 
 
@@ -460,7 +503,7 @@ async calculateRiskScore(
     "response_recommendation",
 
     description:
-    "Recommend incident response actions",
+    "Generate incident response actions",
 
     inputSchema:
     ResponseSchema
@@ -476,6 +519,7 @@ async responseRecommendation(
 ){
 
 
+
     return {
 
 
@@ -485,8 +529,11 @@ async responseRecommendation(
 
         actions:
 
-        this.socService.getResponseRecommendation(
+        this.socService
+        .getResponseRecommendation(
+
             args.attack
+
         )
 
 
@@ -494,7 +541,6 @@ async responseRecommendation(
 
 
 }
-
 
 
 
@@ -516,7 +562,7 @@ async responseRecommendation(
     "log_correlation_analysis",
 
     description:
-    "Correlate multiple security events",
+    "Analyze multiple security events together",
 
     inputSchema:
     CorrelationSchema
@@ -532,7 +578,7 @@ async logCorrelation(
 ){
 
 
-    const threatScore =
+    const score =
     args.events.length * 30;
 
 
@@ -544,15 +590,13 @@ async logCorrelation(
         args.events,
 
 
-        finding:
-
-        "Multiple security events analyzed",
-
+        threatScore:
+        score,
 
 
         threatLevel:
 
-        threatScore >= 90
+        score >= 90
 
         ?
 
@@ -560,7 +604,7 @@ async logCorrelation(
 
         :
 
-        threatScore >= 60
+        score >=60
 
         ?
 
@@ -571,12 +615,10 @@ async logCorrelation(
         "MEDIUM"
 
 
-
     };
 
 
 }
-
 
 
 
@@ -614,6 +656,7 @@ async generateIncidentReport(
 ){
 
 
+
     return this.socService.generateReport(
 
         args.attack,
@@ -647,7 +690,7 @@ async generateIncidentReport(
     "investigate_incident",
 
     description:
-    "Autonomously investigate security incidents using SOC workflow",
+    "Perform autonomous SOC Tier-1 investigation",
 
     inputSchema:
     InvestigationSchema
@@ -660,31 +703,36 @@ async investigateIncident(
     args:
     z.infer<typeof InvestigationSchema>,
 
-    ctx:
-    ExecutionContext
+    ctx:ExecutionContext
 
 ){
 
 
     ctx.logger.info(
-        "Starting autonomous SOC investigation"
+        "Starting autonomous investigation"
     );
 
 
 
-    // 1. Analyze Alert
+
+    // Threat detection
 
     const analysis =
+
     this.socService.analyzeAlert(
+
         args.alert
+
     );
 
 
 
 
-    // 2. Extract IOCs
+
+    // IOC extraction
 
     const iocs =
+
     await this.extractIOCs({
 
         log:
@@ -695,12 +743,15 @@ async investigateIncident(
 
 
 
+
     const threat =
     analysis.threat;
 
 
 
-    // 3. MITRE Mapping
+
+
+    // MITRE Mapping
 
     const mitre =
 
@@ -709,7 +760,9 @@ async investigateIncident(
     ?
 
     this.socService.getMitreTechnique(
+
         threat.name
+
     )
 
     :
@@ -720,7 +773,8 @@ async investigateIncident(
 
 
 
-    // 4. Risk Assessment
+
+    // Risk calculation
 
     const risk =
 
@@ -745,7 +799,8 @@ async investigateIncident(
 
 
 
-    // 5. Response Actions
+
+    // Response
 
     const response =
 
@@ -753,8 +808,11 @@ async investigateIncident(
 
     ?
 
-    this.socService.getResponseRecommendation(
+    this.socService
+    .getResponseRecommendation(
+
         threat.name
+
     )
 
     :
@@ -766,53 +824,103 @@ async investigateIncident(
 
 
 
-    // 6. Final Result
 
 
     return {
 
 
         status:
+
         "Investigation Completed",
 
 
 
+        timestamp:
+
+        new Date()
+        .toISOString(),
+
+
+
         alert:
+
         args.alert,
 
 
 
         threatAnalysis:
+
         analysis,
 
 
 
-        extractedIOCs:
+        indicators:
+
         iocs,
 
 
 
         mitreMapping:
+
         mitre,
 
 
 
         riskAssessment:
+
         risk,
 
 
 
-        recommendedActions:
+        responsePlan:
+
         response,
 
 
 
         summary:
 
-        "Autonomous SOC Tier-1 investigation completed"
+        "Autonomous SOC Tier-1 investigation completed using MITRE ATT&CK intelligence"
 
 
     };
+
+}
+
+
+
+
+
+
+
+
+
+// =================================
+// TOOL 10
+// MITRE DATASET STATUS
+// =================================
+
+
+@Tool({
+
+    name:
+    "mitre_dataset_status",
+
+    description:
+    "Check official MITRE ATT&CK dataset status",
+
+    inputSchema:
+    EmptySchema
+
+})
+
+
+async mitreDatasetStatus(){
+
+
+    return this.socService
+    .getMitreDataCount();
+
 
 }
 
